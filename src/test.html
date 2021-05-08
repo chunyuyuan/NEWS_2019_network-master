@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="https://libs.cartocdn.com/carto-vl/v1.4.4/carto-vl.min.js"></script>
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.0.0/mapbox-gl.js"></script>
+  <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+     
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.0.0/mapbox-gl.css" rel="stylesheet" />
+    <link href="https://carto.com/developers/carto-vl/v1.4.4/examples/maps/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Add map container -->
+     <style>
+    #input11 {
+      position: absolute;
+      
+      width: 45%;
+      left: 40%;
+      
+    }
+    #input12 {
+      position: absolute;
+      
+      width: 45%;
+      left: 40%;
+      
+    }
+        #but1 {
+     
+      
+      width: 30%;
+    
+      
+    }
+    #but2 {
+     
+      
+      width: 30%;
+      
+      
+    }
+       
+    #input3{
+    
+     margin: auto;
+  display: block;
+   width: 70%;
+    
+    }
+     #input4{
+    
+     margin: auto;
+  display: block;
+   width: 70%;
+    
+    }
+     #but{
+    
+     margin: auto;
+  display: block;
+   width: 50%;
+    
+    }
+     #info1 {
+      //display: block;
+       position: absolute;
+      margin-left: 20%;
+  width:70%;
+      margin-top:0px;
+      height: 10px;
+      padding: 0px;
+      border: none;
+      border-radius: 3px;
+      font-size: 7px;
+      text-align: relative;
+      color: #222;
+      background:  rgba(0,0,0,0);
+    }
+    #info2 {
+      //display: block;
+      position: absolute;
+      margin-left: 1%;
+      margin-top: 1%;
+      width: 65%;
+      height: 70%;
+      padding: 60px;
+      border: none;
+      border-radius: 2px;
+      font-size: 6px;
+      text-align: center;
+      pointer-events:none;
+      color: #222;
+      background:  rgba(0,0,0,0);
+    }
+       #delcon{
+    
+   visibility:hidden;
+    
+    
+    
+    }
+   </style>
+    <div id="map">
+     
+    </div>
+    <!-- Description -->
+    <aside class="toolbox" >
+      <div class="box"style=" background:  rgba(0,0,0,0.2);" >
+        <section>
+        <div id='input11'>
+          
+          
+        </div>
+        <button id='but1' value='false'  onclick="change()" style="background-color: green;color:white;border:none;"> <span >Sink</span></button> </section>
+        <div style=' height: 5px;'> </div>
+        <section>
+           <div id='input12'>
+          
+          
+        </div>
+        <button id='but2' value='false'  onclick="change1()" style="background-color: green;color:white;border:none;"> <span >Source</span></button> 
+        </section>
+         <div style=' height: 5px;'> </div>
+        
+        <input id ='input3' type="date" value="2017-04-22"
+       min="2017-01-01" max="2017-12-31" style='left:50%'></input>
+       
+        <div style=' height: 5px;'> </div>
+       
+  <input id ='input4'type="date"  value="2017-07-22"
+       min="2017-01-01" max="2017-12-31"></input>
+       <div style=' height: 5px;'> </div>
+ 
+  <button id='but' onclick="done()"> ANALYSIS</button>
+ 
+        <footer class="js-footer"></footer>
+      </div>
+       <pre id='info1' > </pre>
+    </aside>
+ <pre id='info2' >  </pre>
+
+<img id='delcon' src='img/delete.png' style='width:4%;position:absolute;top:18%;left:60%;' onclick="change2()" >
+    <script>
+        // Add basemap and set properties
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: carto.basemaps.voyager,
+            center: [-90, 45],
+            zoom: 3
+        });
+
+map.dragRotate.disable();
+   const nav = new mapboxgl.NavigationControl({
+      showCompass: false
+    });
+ map.addControl(nav, 'top-left');
+
+        //** CARTO VL functionality begins here **//
+
+        // Define user
+        carto.setDefaultAuth({
+        apiKey: '637ebc9c26cdbd08b749fdf48606de33bb27031a',
+      username: 'cy1281'
+        });
+
+        // Define source
+
+ const source = new carto.source.SQL(`
+      SELECT *
+        FROM networkwithdist
+              where basincells>=5
+      
+      
+    `);
+                  
+ //   [basincells>1] {line-width: 0.2;line-color: #beb8b8; line-opacity: 1;line-cap: round;}
+ //     [basincells>100  ] {line-width: 0.5;line-color: #8585e9; line-opacity: 1;line-cap: round;}
+ //  [basincells>500  ] {line-width: 1;line-color: #5151c6; line-opacity: 1;line-cap: round;}
+ //  [basincells>1000  ] {line-width: 1.5;line-color: #5050e6; line-opacity: 1;line-cap: round;}
+ // [basincells>=1500] {line-width: 2;line-color: #4545f9; line-opacity: 1;line-cap: round;}
+ //  [basincells>=1800] {line-width: 2.5;line-color: #2c66ec; line-opacity: 1;line-cap: round;}
+ // [basincells>=10000] {line-width: 3;line-color: #4040f4; line-opacity: 1;line-cap: round;}
+ //  [basincells>=50000] {line-width: 5;line-color: #1111f4; line-opacity: 1;line-cap: round;}
+ //    [basincells>=100000] {line-width: 8;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+
+
+        // Define Viz object and custom style
+        const viz = new carto.Viz(`
+
+width: ramp(buckets($basincells, [10,100,500,1000,1500,1800,10000,50000,100000]), [0.2,0.5,0.5,1,1.5, 2,2.5,3,5,7])
+color: ramp(buckets($basincells, [10,100,500,1000,1500,1800,10000,50000,100000]), [#beb8b8,#8585e9,#5151c6,#5050e6,#4545f9, #2c66ec,#2c66ec,#4040f4, #1111f4,#0000ff])
+
+
+
+
+            `);
+            
+            
+             const source1 = new carto.source.SQL(`
+      SELECT *
+        FROM networkwithdist_4
+              where basincells>=10
+      
+      
+    `);
+     
+             const source6 = new carto.source.SQL(`
+      SELECT *
+        FROM networkwithdist_4
+              where id=10
+      
+      
+    `);
+     const viz1 = new carto.Viz(` 
+      @lat: $latitude
+      @lon: $longitude
+      @id: $id
+      @id_to: $id_to
+      @basincells: $basincells
+      @basinid: $basinid
+     
+     width: ramp(buckets($basincells, [50000,100000]), [4,6,7])
+     color: ramp(buckets($basincells, [10,100,500,1000,1500,1800,10000,50000,100000]), [#beb8b8,#8585e9,#5151c6,#5050e6,#4545f9, #2c66ec,#2c66ec,#4040f4, #1111f4,#0000ff])
+     `);
+
+        // Define map layer
+
+const viz3 = new carto.Viz(``);
+      
+        const layer1 = new carto.Layer('layer1', source1, viz1);
+          const layer = new carto.Layer('layer', source, viz);
+const layer2 = new carto.Layer('layer2', source6, viz3);
+
+        // Add map layer
+       layer2.addTo(map);
+        layer1.addTo(map);
+         layer.addTo(map);
+//layer.on('loaded', hideLoader);
+var source_lat;
+var source_lon;
+ //   function hideLoader() {
+ //   layer.hide()
+
+	//	document.getElementById('loader').style.opacity = '0';
+  //  }
+    
+    
+const interactivity1 = new carto.Interactivity(layer2);
+     const interactivity = new carto.Interactivity(layer1);
+      const delay = 5;
+      let clickedFeatureId = null;
+        interactivity.on('featureEnter', event => {
+            event.features.forEach(feature => {
+             var change = document.getElementById("but1");
+             var change1 = document.getElementById("but2");
+                if (feature.id !== clickedFeatureId&&(change.value=='true'||change1.value=='true')) {
+                    feature.color.blendTo('opacity(DeepPink, 1)', delay)
+                    feature.width.blendTo('20', delay);
+                 
+                   
+                }
+                
+                    
+            });
+        });
+
+        interactivity.on('featureLeave', event => {
+            event.features.forEach(feature => {
+                if (feature.id !== clickedFeatureId) {
+                    feature.color.reset(delay);
+                    feature.width.reset(delay);
+                   
+                }
+            });
+        });
+        var loc;
+        var loc1;
+         interactivity.on('featureHover', updatePopup);
+            function updatePopup(event) {
+              var change = document.getElementById("but1");
+                var change1 = document.getElementById("but2");
+             // console.log(change);
+            if (event.features.length > 0&&change.value=='true') {
+                const vars = event.features[0].variables;
+                loc=JSON.stringify((vars.lat.value).toPrecision(5))+" "+JSON.stringify((vars.lon.value).toPrecision(5));
+
+llatover=parseFloat((vars.lat.value).toPrecision(5));
+llonover=parseFloat((vars.lon.value).toPrecision(5));
+source_lon=llonover;
+source_lat=llatover;
+
+ document.getElementById('input11').innerHTML ='<font size="2.5">'+loc+'</font>';
+ sinkbasinid=vars.basinid.value;
+source_id=vars.id.value;
+console.log(source_id);
+//console.log(sinkbasinid);
+       
+            } 
+           
+        }
+var dist_lat=0;
+var dist_lon=0;
+
+        interactivity1.on('featureHover', updatePopup1);
+            function updatePopup1(event) {
+              var change = document.getElementById("but1");
+                var change1 = document.getElementById("but2");
+             // console.log(change);
+            if (event.features.length > 0) {
+               // const vars = event.features[0].properties;
+  const vars = event.features[0].variables;
+                loc=JSON.stringify((vars.lat.value).toPrecision(5))+" "+JSON.stringify((vars.lon.value).toPrecision(5));
+dist_lat=parseFloat((vars.lat.value).toPrecision(5));
+dist_lon=parseFloat((vars.lon.value).toPrecision(5));
+
+//llatover=parseFloat((vars.lat.value).toPrecision(5));
+//llonover=parseFloat((vars.lon.value).toPrecision(5));
+dist_id=vars.id.value;
+
+ document.getElementById('input12').innerHTML ='<font size="2.5">'+loc+'</font>';
+ //sinkbasinid=vars.basinid.value;
+//source_id=vars.id.value;
+//console.log(source_id);
+//console.log(vars);
+//console.log(vars1.id.value);
+       
+//console.log( event.features[0]);
+            } 
+           
+        }
+
+        var marker;
+        var marker1;
+        var sinkbasinid;
+        var source_id=0;
+var dist_id=0;
+    interactivity1.on('featureClick', event => {
+           var change = document.getElementById("but1");
+             var change1 = document.getElementById("but2");
+            if (change1.value=='true') {
+            if(typeof marker1 != 'undefined'){
+            marker1.remove();
+            
+            }
+          //  console.log(marker);
+         // console.log(llatover);
+            
+                const feature = event.features[0];
+                marker1 = new mapboxgl.Marker()
+  .setLngLat([ dist_lon,dist_lat])
+    .setPopup(new mapboxgl.Popup({ offset: 25 }) // add popups
+    .setHTML('<h3>' + "source" + '</h3>'))
+  .addTo(map);
+
+ var req = new XMLHttpRequest();
+        //var result = document.getElementById('info1');
+        req.open('POST', 'http://0.0.0.0:5000/ ', true);
+        req.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        req.timeout = 6000000;  
+//var link="source=no&sourceid="+String(source_id)+"&dist=yes&distid="+String(dist_id)+"&pic=no";
+//console.log(link);
+       req.send("source=no&sourceid="+String(source_id)+"&dist=yes&distid="+String(dist_id)+"&pic=no");
+  req.onreadystatechange = function()
+        {
+    
+         if(this.status>0){  
+change.value='false';
+console.log(this.status)
+document.getElementById("but2").style['background-color']='blue';
+;        
+           var x="{\"type\": \"FeatureCollection\",\"features\":"+this.responseText;
+//var x="{"+this.reponseText+"}";
+          console.log(x.substring(40));
+//console.log(jQuery.parseJSON(x));
+
+//layerPostalcodes=new L.geoJson(jQuery.parseJSON(x), {style: polystyle,onEachFeature:onEachFeature});
+//console.log(x);
+  const source7 = new carto.source.GeoJSON(jQuery.parseJSON(x.substring(40)));
+const viz2 = new carto.Viz(`color:red width:10 @id:$id @lat:$lat @lon:$lon`);
+  
+layer2.update(source7,viz2);
+   
+
+change1.value = "false";
+}
+}
+
+ 
+
+
+
+}});
+
+var upstream;
+          interactivity.on('featureClick', event => {
+           var change = document.getElementById("but1");
+             var change1 = document.getElementById("but2");
+            if (event.features.length> 0&&change.value=='true') {
+            if(typeof marker != 'undefined'){
+            marker.remove();
+            
+            }
+          //  console.log(marker);
+          //  console.log(llatover);
+            
+                const feature = event.features[0];
+                marker = new mapboxgl.Marker()
+  .setLngLat([ llonover,llatover])
+    .setPopup(new mapboxgl.Popup({ offset: 25 }) // add popups
+    .setHTML('<h3>' + "sink" + '</h3>'))
+  .addTo(map);
+ // console.log(sinkbasinid);
+
+
+    const source3 = new carto.source.SQL(`
+      SELECT *
+        FROM networkwithdist
+              where basincells>=5 and basinid=`+sinkbasinid
+      
+      
+    );
+     const source4 = new carto.source.SQL(`
+      SELECT *
+        FROM networkwithdist_4
+              where basincells>=10 and basinid=`+sinkbasinid
+      
+      
+    );
+       layer1.update(source4,viz1);
+   layer.update(source3,viz);
+   
+   // layer1.hide();
+  var req = new XMLHttpRequest();
+        //var result = document.getElementById('info1');
+        req.open('POST', 'http://0.0.0.0:5000/ ', true);
+        req.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        req.timeout = 600000; 
+console.log(source_id);
+        req.send("source=yes&sourceid="+String(source_id)+"&dist=no&distid="+String(dist_id)+"&pic=no");
+
+
+
+
+//marker_source=L.marker([37.7858, -122.401]).add(map);
+   
+        req.onreadystatechange = function()
+        {
+          if(this.status <= 2000 && this.status>0) {
+           
+        
+            var x="{\"type\": \"FeatureCollection\",\"features\":"+this.responseText+"}";
+          //  console.log(x);
+//console.log(jQuery.parseJSON(x));
+
+//layerPostalcodes=new L.geoJson(jQuery.parseJSON(x), {style: polystyle,onEachFeature:onEachFeature});
+upstream=jQuery.parseJSON(x);
+  const source5 = new carto.source.GeoJSON(jQuery.parseJSON(x));
+const viz2 = new carto.Viz(`color:red @id:$id @lat:$lat @lon:$lon`);
+  
+layer2.update(source5,viz2);
+   
+   
+   
+    change.value = "false";
+   
+   ////////////////////flask up stream/////////////////
+  
+
+            }
+
+}
+}
+                      
+        });
+
+
+    var carto_check='no';    
+            function change() {
+  var change = document.getElementById("but1");
+ var change1 = document.getElementById("but2");
+ 
+          
+  if (change.value == "false") {
+    change.value = "true";
+change1.value = "false";
+carto_check='no';
+    //const source2 = new carto.source.SQL(`
+      //SELECT *
+        //FROM networkwithdist
+      //        where basincells>=100000
+      
+      
+    //`);
+  //  const source3 = new carto.source.SQL(`
+    //  SELECT *
+      //  FROM networkwithdist_4
+        //      where basincells>=100000
+      
+      
+    //`);
+    //console.log(populatedPlacesSource2);
+    
+  //  layer.update(source2,viz);
+   //  layer1.update(source3,viz1);
+document.getElementById("but1").style['background-color']='green';
+document.getElementById("but2").style['background-color']='green';
+    //document.test.submit();
+  } else {
+  //  change.value = "false";
+
+  }
+    layer1.update(source1,viz1);
+  
+  
+  
+  layer.update(source,viz);
+  
+}
+function change1() {
+  var change = document.getElementById("but2");
+
+if(carto_check=='yes'){
+          
+  if (change.value == "false") {
+document.getElementById("but2").style['background-color']='green';
+    change.value = "carto";
+ 
+
+
+  } else{
+
+//change.value = "false";
+ 
+}
+
+
+}else{
+
+  //if (change.value == "false") {
+    change.value = "true";
+
+
+document.getElementById("but2").style['background-color']='green';
+
+  //} else{
+
+
+
+//}
+
+}
+  const source5 = new carto.source.GeoJSON(upstream);
+const viz2 = new carto.Viz(`color:red @id:$id @lat:$lat @lon:$lon`);
+  
+layer2.update(source5,viz2);
+   
+//console.log(change.value);
+}
+var pic;
+var xlist;
+var ylist1;
+var ylist2;
+
+  function done() {
+      //  document.getElementById('info1').innerHTML="<div '><img src='plot.png'  style='width:80%;position:absolute;left:20px;top:180px;' '></div>";
+       var req = new XMLHttpRequest();
+        var result = document.getElementById('info1');
+
+        req.onreadystatechange = function()
+        {
+          if(this.status == 200) {
+ check_status=200;
+s=this.responseText.split("***");
+
+try{
+xlist = s[1].match(/\d+(?:\.\d+)?/g).map(Number);
+}catch(error){
+}
+try{
+ylist1 = s[2].match(/\d+(?:\.\d+)?/g).map(Number);
+}catch(error){
+}
+try{
+ylist2 = s[3].match(/\d+(?:\.\d+)?/g).map(Number);
+}catch(error){
+}
+//console.log(xlist);
+
+            result.innerHTML = "<div top=\'0px\' >"+'<img src="data:image/jpg;base64,' + s[0] + '"/ width=\'100%\' onclick="changeimg()"  >'+"</div>";
+ //result1.innerHTML = "<div top=\'0px\' >"+'<img src="data:image/jpg;base64,' + this.responseText + '"/ width=\'100%\'  >'+"</div>";
+            pic=s[0];
+           // console.log(x);
+          }  else if(this.status == 201) {
+           // result.innerHTML = "Processing...";
+            //console.log(this.status);
+            check_status=201;
+             result.innerHTML = "<div top=\'0px\' >"+'<img src="img/plot1.png"/ width=\'100%\' onclick="changeimg()"  >'+"</div>";
+          }else {
+            result.innerHTML = "Processing...";
+           // console.log(this.readyState)
+          }
+        }
+var value3 = document.getElementById("input3");
+  var value4 = document.getElementById("input4");
+        req.open('POST', 'http://0.0.0.0:5000/ ', true);
+        req.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        //req.setRequestHeader('Access-Control-Allow-Origin','*');
+ //req.send("source=no&sourceid=&dist=no&distid=&pic=yes"+"&dist_lat="+35.475+"&dist_lon="+-78.825+"&source_lat="+35.125+"&source_lon="+-78.875+"&from="+value3.value+"&to="+value4.value);
+        if(source_lat!=0&&source_lon!=0&&dist_lat!=0&&dist_lat!=0){
+             req.send("source=no&sourceid=&dist=no&distid=&pic=yes"+"&dist_lat="+dist_lat+"&dist_lon="+dist_lon+"&source_lat="+source_lat+"&source_lon="+source_lon+"&from="+value3.value+"&to="+value4.value);
+
+
+}
+      }
+
+
+var check_status=0;
+
+
+function changeimg(){
+
+
+ var result1 = document.getElementById('info2');
+ result1.style.visibility = "visible";
+ if(check_status==200){ 
+
+
+
+var trace1 = {
+  x: xlist,
+  y: ylist1 ,
+  name: 'Discharge',
+ mode: 'lines+markers',
+ line: {
+    color: 'rgb(173,216,230)',
+    width: 2
+  },
+  type: 'scatter'
+};
+
+var trace2 = {
+  x: xlist,
+  y: ylist2,
+  name: 'Temperature',
+ mode: 'lines+markers',
+  yaxis: 'y2',
+ line: {
+    color: 'rgb(139,0,0)',
+    width: 2
+  },
+  type: 'scatter'
+};
+
+var data = [trace1, trace2];
+
+var layout = {
+  title: 'Analysis results',
+  xaxis: {title:'Distance From start to end (km)',font:{size:10}},
+  yaxis: {title: 'Average Discharge (m<sup>3</sup>/s)',   titlefont: {size:10,color: 'rgb(173,216,230)'},
+    tickfont: {size:10,color: 'rgb(173,216,230)'}},
+  yaxis2: {
+    title: 'Average Water Temperature (\u2103} ',
+    titlefont: {size:10,color: 'rgb(139,0,0)'},
+    tickfont: {size:10,color: 'rgb(139,0,0)'},
+    overlaying: 'y',
+    side: 'right'
+  },
+  showlegend: true,
+	legend: {"orientation": "h",x:0.1,y:1.2}
+};
+
+Plotly.newPlot(result1, data, layout);
+
+ }
+ 
+  if(check_status==201){ 
+ result1.innerHTML = "<div top=\'0px\' >"+'<img src="img/plot1.png"/ width=\'80%\' "  >'+"</div>";
+console.log("i am 201")
+; }
+ 
+          // d.innerHTML = "<img src='hk.jpg' style='width:70%' align='middle'>";
+         //   var del = document.getElementById('delcon');
+          // del.style='display:inline-block;'
+  var del = document.getElementById('delcon');
+          del.style.visibility = 'visible';
+
+
+
+}
+
+
+function change2(){
+var d = document.getElementById('info2');
+Plotly.purge('info2');
+d.style.visibility = "hidden";
+ 
+           // d.innerHTML = "<img src='hk.jpg' style='width:70%' align='middle'>";
+   var d1 = document.getElementById('delcon');
+   d1.style.visibility='hidden';
+   
+}
+        
+
+    </script>
+</body>
+</html>

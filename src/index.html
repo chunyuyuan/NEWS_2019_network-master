@@ -1,0 +1,818 @@
+      <!DOCTYPE html>
+<html>
+  <head>
+    <title>VIS TOOL</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,600,700|Open+Sans:300,400,600" rel="stylesheet">
+    <!-- Include Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+    <link href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" rel="stylesheet">
+    <!-- Include CARTO.js -->
+    <script src="https://libs.cartocdn.com/carto.js/v4.1.11/carto.min.js"></script>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+     
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+       <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <link href="https://carto.com/developers/carto-js/examples/maps/public/style.css" rel="stylesheet">
+  </head>
+  <body>
+   <style>
+    #input11 {
+      position: absolute;
+      
+      width: 45%;
+      left: 40%;
+      
+    }
+    #input12 {
+      position: absolute;
+      
+      width: 45%;
+      left: 40%;
+      
+    }
+        #but1 {
+     
+      
+      width: 30%;
+    
+      
+    }
+    #but2 {
+     
+      
+      width: 30%;
+      
+      
+    }
+       
+    #input3{
+    
+     margin: auto;
+  display: block;
+   width: 70%;
+    
+    }
+     #input4{
+    
+     margin: auto;
+  display: block;
+   width: 70%;
+    
+    }
+     #but{
+    
+     margin: auto;
+  display: block;
+   width: 50%;
+    
+    }
+     #info1 {
+      //display: block;
+       position: absolute;
+      margin-left: 20%;
+  width:70%;
+      margin-top:0px;
+      height: 10px;
+      padding: 0px;
+      border: none;
+      border-radius: 3px;
+      font-size: 7px;
+      text-align: relative;
+      color: #222;
+      background:  rgba(0,0,0,0);
+    }
+    #info2 {
+      //display: block;
+      position: absolute;
+      margin-left: 1%;
+      margin-top: 1%;
+      width: 65%;
+      height: 70%;
+      padding: 60px;
+      border: none;
+      border-radius: 2px;
+      font-size: 6px;
+      text-align: center;
+      pointer-events:none;
+      color: #222;
+      background:  rgba(0,0,0,0);
+    }
+       #delcon{
+    
+   visibility:hidden;
+    
+    
+    
+    }
+   </style>
+    <div id="map">
+     
+    </div>
+    <!-- Description -->
+    <aside class="toolbox" >
+      <div class="box"style=" background:  rgba(0,0,0,0.2);" >
+        <section>
+        <div id='input11'>
+          
+          
+        </div>
+        <button id='but1' value='false'  onclick="change()" style="background-color: green;color:white;border:none;"> <span >Sink</span></button> </section>
+        <div style=' height: 5px;'> </div>
+        <section>
+           <div id='input12'>
+          
+          
+        </div>
+        <button id='but2' value='false'  onclick="change1()" style="background-color: green;color:white;border:none;"> <span >Source</span></button> 
+        </section>
+         <div style=' height: 5px;'> </div>
+        
+        <input id ='input3' type="date" value="2017-04-22"
+       min="2017-01-01" max="2017-12-31" style='left:50%'></input>
+       
+        <div style=' height: 5px;'> </div>
+       
+  <input id ='input4'type="date"  value="2017-07-22"
+       min="2017-01-01" max="2017-12-31"></input>
+       <div style=' height: 5px;'> </div>
+ 
+  <button id='but' onclick="done()"> ANALYSIS</button>
+ 
+        <footer class="js-footer"></footer>
+      </div>
+       <pre id='info1' > </pre>
+    </aside>
+ <pre id='info2' >  </pre>
+
+<img id='delcon' src='img/delete.png' style='width:4%;position:absolute;top:18%;left:60%;' onclick="change2()" >
+
+    <script>
+
+      const map = L.map('map').setView([30, 0], 3);
+
+     // map.scrollWheelZoom.disable();
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
+        maxZoom: 18
+      }).addTo(map);
+
+      const client = new carto.Client({
+         apiKey: '637ebc9c26cdbd08b749fdf48606de33bb27031a',
+        username: 'cy1281'
+      });
+
+     var layerGroup = new L.LayerGroup();
+layerGroup.addTo(map);
+      
+  
+        const style1= new carto.style.CartoCSS(`
+       #layer1 {
+ [basincells>1] {line-width: 0.2;line-color: #beb8b8; line-opacity: 1;line-cap: round;}
+      [basincells>100  ] {line-width: 0.5;line-color: #8585e9; line-opacity: 1;line-cap: round;}
+    [basincells>500  ] {line-width: 1;line-color: #5151c6; line-opacity: 1;line-cap: round;}
+   [basincells>1000  ] {line-width: 1.5;line-color: #5050e6; line-opacity: 1;line-cap: round;}
+  [basincells>=1500] {line-width: 2;line-color: #4545f9; line-opacity: 1;line-cap: round;}
+   [basincells>=1800] {line-width: 2.5;line-color: #2c66ec; line-opacity: 1;line-cap: round;}
+  [basincells>=10000] {line-width: 3;line-color: #4040f4; line-opacity: 1;line-cap: round;}
+   [basincells>=50000] {line-width: 5;line-color: #1111f4; line-opacity: 1;line-cap: round;}
+
+     [basincells>=100000] {line-width: 8;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+}
+      `);
+     
+  var js =[];
+
+function polystyle(feature) {
+    return {
+       fillColor: 'blue',
+        weight: 2,
+        opacity: 1,
+        color: 'blue',  //Outline color
+        fillOpacity: 0.7
+    };
+}
+
+var llatover;
+var llonover;
+
+function onEachFeature(feature,layer) {
+   layer.on({
+
+'mouseover':function(e){//console.log(e.target.feature.properties.id);
+     var change = document.getElementById("but2");
+var loc;
+     if(change.value=='true'){
+loc=JSON.stringify((e.target.feature.properties.lat).toPrecision(5))+" "+JSON.stringify((e.target.feature.properties.lon).toPrecision(5));
+
+llatover=e.target.feature.properties.lat;
+llonover=e.target.feature.properties.lon;
+
+ document.getElementById('input12').innerHTML =loc;
+} 
+
+
+
+
+
+},
+
+
+
+'click':function(e){//console.log(e.target.feature.properties.id);
+dist_lat=(e.target.feature.properties.lat).toPrecision(5);
+dist_lon=(e.target.feature.properties.lon).toPrecision(5);
+
+dist_id=e.target.feature.properties.id;
+
+ var change = document.getElementById("but2");
+if(change.value=='true'){
+change.value='false';
+
+ var req = new XMLHttpRequest();
+        //var result = document.getElementById('info1');
+        req.open('POST', 'http://0.0.0.0:5000/ ', true);
+        req.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        req.timeout = 6000000;  
+//var link="source=no&sourceid="+String(source_id)+"&dist=yes&distid="+String(dist_id)+"&pic=no";
+//console.log(link);
+       req.send("source=no&sourceid="+String(source_id)+"&dist=yes&distid="+String(dist_id)+"&pic=no");
+  
+ //req.send(link);
+
+     
+        req.onreadystatechange = function()
+        {
+    
+         if(this.status==200){  
+console.log(this.status)
+;        
+document.getElementById("but2").style['background-color']='blue';
+            var x=this.responseText;
+           // console.log(jQuery.parseJSON(x));
+function polystyle(feature) {
+    return {
+       fillColor: 'red',
+        weight: 2,
+        opacity: 1,
+        color: 'red',  //Outline color
+        fillOpacity: 1
+    };
+}
+ layerGroup.clearLayers();
+var layerPostal=new L.geoJson(jQuery.parseJSON(x), {style: polystyle,onEachFeature:onEachFeature});
+  marker_source = L.marker([source_lat, source_lon]).addTo(layerPostal);
+marker_source.bindPopup("<b>Sink Node!</b>").openPopup();  
+
+
+  marker_dist = L.marker([dist_lat, dist_lon]).addTo(layerPostal);
+marker_dist.bindPopup("<b>Source Node!</b>").openPopup();  
+
+layerGroup.addLayer(layerPostal);
+populatedPlacesSource1.setQuery("SELECT * FROM networkwithdist where basinid="+featureEvent.data.basinid);
+ style1.setContent(`#layer1 {
+                   //line-width: 2;
+                   //line-color: #0000ff;
+                    //line-opacity: 1;
+                    
+                    
+                     [basincells>1] {line-width: 0.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+      [basincells>100  ] {line-width: 0.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+    [basincells>500  ] {line-width: 1;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>1000  ] {line-width: 1.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+  [basincells>=1500] {line-width: 2;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>=1800] {line-width: 2.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+  [basincells>=10000] {line-width: 3;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>=50000] {line-width: 5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+
+     [basincells>=100000] {line-width: 8;line-color: #0000ff; line-opacity:1;line-cap: round;}
+      [id=`+source_id+`] {line-width: 2;line-color: #ff0000; line-opacity: 1;line-cap: round;}
+                      }
+        
+                         `);
+                         
+
+          
+        }
+
+}
+}
+  
+
+
+
+
+
+
+}
+
+
+});
+}
+
+var layerPostalcodes=new L.geoJson(js, {style: polystyle,onEachFeature:onEachFeature});
+//L.geoJson(js, {style: polystyle}).addTo(map);
+//L.geoJSON(js).addTo(map);
+layerGroup.addLayer(layerPostalcodes);
+
+      const populatedPlacesSource1 = new carto.source.SQL(`
+  
+    SELECT * FROM networkwithdist
+`);
+    // var pop ;//= new carto.source.SQL(`
+ //// SELECT *
+    //FROM ne_50m_rivers_lake_centerlines
+//`);
+     
+
+
+//should use tnode_
+//background layer
+
+//basinid layer
+const populatedPlaces2 = new carto.layer.Layer(populatedPlacesSource1, style1, {
+  featureOverColumns: ['id','cellycoord','cellxcoord','id_to','basinid']
+});
+
+client.addLayers([populatedPlaces2]);
+     // const layer = new carto.layer.Layer(source, style);
+      
+//const popup = L.popup({ closeButton: false });
+    function change() {
+  var change = document.getElementById("but1");
+ var change1 = document.getElementById("but2");
+  layerGroup.clearLayers();
+          
+  if (change.value == "false") {
+    change.value = "true";
+change1.value = "false";
+carto_check='no';
+      populatedPlacesSource1.setQuery("SELECT * FROM networkwithdist ");
+
+    //console.log(populatedPlacesSource2);
+       style1.setContent(`
+     
+ #layer1 {
+ [basincells>1] {line-width: 0.2;line-color: #beb8b8; line-opacity: 1;line-cap: round;}
+      [basincells>100  ] {line-width: 0.5;line-color: #8585e9; line-opacity: 1;line-cap: round;}
+    [basincells>500  ] {line-width: 1;line-color: #5151c6; line-opacity: 1;line-cap: round;}
+   [basincells>1000  ] {line-width: 1.5;line-color: #5050e6; line-opacity: 1;line-cap: round;}
+  [basincells>=1500] {line-width: 2;line-color: #4545f9; line-opacity: 1;line-cap: round;}
+   [basincells>=1800] {line-width: 2.5;line-color: #2c66ec; line-opacity: 1;line-cap: round;}
+  [basincells>=10000] {line-width: 3;line-color: #4040f4; line-opacity: 1;line-cap: round;}
+   [basincells>=50000] {line-width: 5;line-color: #1111f4; line-opacity: 1;line-cap: round;}
+
+     [basincells>=100000] {line-width: 8;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+  
+}
+        
+      `);
+document.getElementById("but1").style['background-color']='green';
+document.getElementById("but2").style['background-color']='green';
+    //document.test.submit();
+  } else {
+  //  change.value = "false";
+
+  }
+}
+ function change1() {
+  var change = document.getElementById("but2");
+
+if(carto_check=='yes'){
+          
+  if (change.value == "false") {
+document.getElementById("but2").style['background-color']='green';
+    change.value = "carto";
+ layerGroup.clearLayers();
+  marker_source = L.marker([source_lat, source_lon]).addTo(layerGroup);
+marker_source.bindPopup("<b>Sink Node!</b>").openPopup();  
+            populatedPlacesSource1.setQuery("SELECT * FROM networkwithdist where basinid="+basinid);
+            style1.setContent(`
+     
+            #layer1 {
+                
+                     
+
+[basincells>1] {line-width: 0.1;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+      [basincells>100  ] {line-width: 0.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+    [basincells>500  ] {line-width: 1;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>1000  ] {line-width: 1.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+  [basincells>=1500] {line-width: 2;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>=1800] {line-width: 2.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+  [basincells>=10000] {line-width: 3;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>=50000] {line-width: 5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+
+     [basincells>=100000] {line-width: 8;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+                     }
+                      
+        
+                         `);
+
+  } else{
+
+//change.value = "false";
+ 
+}
+
+
+}else{
+
+  //if (change.value == "false") {
+    change.value = "true";
+ layerGroup.clearLayers();
+layerGroup.addLayer(layerPostalcodes);
+document.getElementById("but2").style['background-color']='green';
+
+  //} else{
+
+
+
+//}
+
+}
+//console.log(change.value);
+}
+var source_id=0;
+var dist_id=0;
+
+var source_lat=0;
+var source_lon=0;
+var dist_lat=0;
+var dist_lon=0;
+
+
+var carto_check='no';
+var marker_source;
+var marker_dist;
+
+
+populatedPlaces2.on('featureClicked', featureEvent => {
+
+     var change = document.getElementById("but1");
+       //  document.getElementById("but1")[0].style.backgroundColor = "blue";
+        
+   if(change.value=='true'){
+
+        var req = new XMLHttpRequest();
+        //var result = document.getElementById('info1');
+        req.open('POST', 'http://0.0.0.0:5000/ ', true);
+        req.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        req.timeout = 600000; 
+        req.send("source=yes&sourceid="+featureEvent.data.id+"&dist=no&distid="+String(dist_id)+"&pic=no");
+source_id=featureEvent.data.id;
+if(source_id==0){
+source_id=featureEvent.data.id;
+
+}
+
+
+source_lat=(featureEvent.data.cellycoord).toPrecision(5);
+source_lon=(featureEvent.data.cellxcoord).toPrecision(5);
+//marker_source=L.marker([37.7858, -122.401]).add(map);
+        change.value=false;
+        req.onreadystatechange = function()
+        {
+          if(this.status <= 2000 && this.status>0) {
+           
+        
+            var x=this.responseText;
+            console.log(x);
+console.log(jQuery.parseJSON(x));
+function polystyle(feature) {
+    return {
+       fillColor: 'red',
+        weight: 0.5,
+        opacity: 1,
+        color: 'red',  //Outline color
+        fillOpacity: 1
+    };
+}
+layerPostalcodes=new L.geoJson(jQuery.parseJSON(x), {style: polystyle,onEachFeature:onEachFeature});
+
+layerGroup.addLayer(layerPostalcodes);
+  marker_source = L.marker([source_lat, source_lon]).addTo(layerPostalcodes);
+marker_source.bindPopup("<b>Sink Node!</b>").openPopup();  
+ //populatedPlacesSource1.setQuery("SELECT * FROM networkwithdist where id="+source_id);
+ populatedPlacesSource1.setQuery("SELECT * FROM networkwithdist where basinid="+featureEvent.data.basinid);
+ style1.setContent(`#layer1 {
+                   //line-width: 2;
+                   //line-color: #0000ff;
+                    //line-opacity: 1;
+                    
+                    
+                     [basincells>1] {line-width: 0.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+      [basincells>100  ] {line-width: 0.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+    [basincells>500  ] {line-width: 1;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>1000  ] {line-width: 1.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+  [basincells>=1500] {line-width: 2;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>=1800] {line-width: 2.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+  [basincells>=10000] {line-width: 3;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>=50000] {line-width: 5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+
+     [basincells>=100000] {line-width: 8;line-color: #0000ff; line-opacity:1;line-cap: round;}
+      [id=`+source_id+`] {line-width: 0.5;line-color: #ff0000; line-opacity: 1;line-cap: round;}
+                      }
+        
+                         `);
+                         
+ // console.log(document.getElementById("but1").style['background-color']);
+document.getElementById("but1").style['background-color']='blue';
+          } else if(this.status==0){
+
+change.value=true;
+
+
+
+}else {
+
+  marker_source = L.marker([source_lat, source_lon]).addTo(layerGroup);
+marker_source.bindPopup("<b >Sink Node!</b><br><p>(Upstream is large, so display entire flow!!!)</p>").openPopup(); 
+            basinid= featureEvent.data.basinid;
+            populatedPlacesSource1.setQuery("SELECT * FROM networkwithdist where basinid="+featureEvent.data.basinid);
+            style1.setContent(`
+     
+            #layer1 {
+                 
+[basincells>1] {line-width: 0.2;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+      [basincells>100  ] {line-width: 0.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+    [basincells>500  ] {line-width: 1;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>1000  ] {line-width: 1.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+  [basincells>=1500] {line-width: 2;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>=1800] {line-width: 2.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+  [basincells>=10000] {line-width: 3;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>=50000] {line-width: 5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+
+     [basincells>=100000] {line-width: 8;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+     
+                      }
+        
+                         `);
+carto_check='yes';
+document.getElementById("but1").style['background-color']='blue';
+          }
+        }
+
+
+}
+  
+});
+var basinid=0;
+
+populatedPlaces2.on('featureOver', featureEvent => {
+var loc=JSON.stringify((featureEvent.data.cellycoord).toPrecision(5))+" "+JSON.stringify((featureEvent.data.cellxcoord).toPrecision(5));//+" "+featureEvent.data.cartodb_id;
+     var change = document.getElementById("but1");
+     if(change.value=='true'){
+ document.getElementById('input11').innerHTML =loc;
+}
+
+});
+
+
+
+populatedPlaces2.on('featureOver', featureEvent => {
+var change = document.getElementById("but2");
+ var loc=JSON.stringify((featureEvent.data.cellycoord).toPrecision(5))+" "+JSON.stringify((featureEvent.data.cellxcoord).toPrecision(5));//+" "+featureEvent.data.cartodb_id;
+
+     if(change.value=='carto'){
+ document.getElementById('input12').innerHTML =loc;
+}
+
+});
+
+
+
+populatedPlaces2.on('featureClicked', featureEvent => {
+
+     var change = document.getElementById("but2");
+   if(change.value=='carto'){
+     dist_id=featureEvent.data.id;
+dist_lat=(featureEvent.data.cellycoord).toPrecision(5);
+dist_lon=(featureEvent.data.cellxcoord).toPrecision(5);
+//console.log(dist_id);
+//console.log(change.value);
+
+        var req = new XMLHttpRequest();
+        //var result = document.getElementById('info1');
+        req.open('POST', 'http://0.0.0.0:5000/ ', true);
+        req.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        req.timeout = 6000000;  
+//var link="source=no&sourceid="+String(source_id)+"&dist=yes&distid="+String(dist_id)+"&pic=no";
+//console.log(link);
+       req.send("source=no&sourceid="+String(source_id)+"&dist=yes&distid="+String(dist_id)+"&pic=no");
+  
+ //req.send(link);
+
+     
+        req.onreadystatechange = function()
+        {
+    
+         if(this.status==200){  
+change.value='false';
+//console.log(this.status)
+document.getElementById("but2").style['background-color']='blue';
+;        
+            var x=this.responseText;
+           console.log(x);
+function polystyle(feature) {
+    return {
+       fillColor: 'red',
+        weight: 2,
+        opacity: 1,
+        color: 'red',  //Outline color
+        fillOpacity: 1
+    };
+}
+ layerGroup.clearLayers();
+var layerPostal=new L.geoJson(jQuery.parseJSON(x), {style: polystyle,onEachFeature:onEachFeature});
+  marker_source = L.marker([source_lat, source_lon]).addTo(layerGroup);
+marker_source.bindPopup("<b>Sink Node!</b>").openPopup();  
+  marker_dist = L.marker([dist_lat, dist_lon]).addTo(layerGroup);
+marker_dist.bindPopup("<b>Source Node!</b>").openPopup();  
+layerGroup.addLayer(layerPostal);
+ populatedPlacesSource1.setQuery("SELECT * FROM networkwithdist where basinid="+basinid);
+ style1.setContent(`#layer1 {
+                   //line-width: 2;
+                   //line-color: #0000ff;
+                    //line-opacity: 1;
+                    
+                    
+                     [basincells>1] {line-width: 0.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+      [basincells>100  ] {line-width: 0.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+    [basincells>500  ] {line-width: 1;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>1000  ] {line-width: 1.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+  [basincells>=1500] {line-width: 2;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>=1800] {line-width: 2.5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+  [basincells>=10000] {line-width: 3;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+   [basincells>=50000] {line-width: 5;line-color: #0000ff; line-opacity: 1;line-cap: round;}
+
+     [basincells>=100000] {line-width: 8;line-color: #0000ff; line-opacity:1;line-cap: round;}
+      [id=`+source_id+`] {line-width: 0.5;line-color: #ff0000; line-opacity: 1;line-cap: round;}
+                      }
+        
+                         `);
+
+          
+        }
+
+}
+}
+  
+});
+
+
+var pic;
+var xlist;
+var ylist1;
+var ylist2;
+
+
+
+     // client.addLayer(layer);
+     // client.getLeafletLayer().addTo(map);
+
+var check_status=0;
+
+
+function changeimg(){
+
+
+ var result1 = document.getElementById('info2');
+ result1.style.visibility = "visible";
+ if(check_status==200){ 
+
+
+
+var trace1 = {
+  x: xlist,
+  y: ylist1 ,
+  name: 'Discharge',
+ mode: 'lines+markers',
+ line: {
+    color: 'rgb(173,216,230)',
+    width: 2
+  },
+  type: 'scatter'
+};
+
+var trace2 = {
+  x: xlist,
+  y: ylist2,
+  name: 'Temperature',
+ mode: 'lines+markers',
+  yaxis: 'y2',
+ line: {
+    color: 'rgb(139,0,0)',
+    width: 2
+  },
+  type: 'scatter'
+};
+
+var data = [trace1, trace2];
+
+var layout = {
+  title: 'Analysis results',
+  xaxis: {title:'Distance From start to end (km)',font:{size:10}},
+  yaxis: {title: 'Average Discharge (m<sup>3</sup>/s)',   titlefont: {size:10,color: 'rgb(173,216,230)'},
+    tickfont: {size:10,color: 'rgb(173,216,230)'}},
+  yaxis2: {
+    title: 'Average Water Temperature (\u2103} ',
+    titlefont: {size:10,color: 'rgb(139,0,0)'},
+    tickfont: {size:10,color: 'rgb(139,0,0)'},
+    overlaying: 'y',
+    side: 'right'
+  },
+  showlegend: true,
+	legend: {"orientation": "h",x:0.1,y:1.2}
+};
+
+Plotly.newPlot(result1, data, layout);
+
+ }
+ 
+  if(check_status==201){ 
+ result1.innerHTML = "<div top=\'0px\' >"+'<img src="img/plot1.png"/ width=\'80%\' "  >'+"</div>";
+console.log("i am 201")
+; }
+ 
+          // d.innerHTML = "<img src='hk.jpg' style='width:70%' align='middle'>";
+         //   var del = document.getElementById('delcon');
+          // del.style='display:inline-block;'
+  var del = document.getElementById('delcon');
+          del.style.visibility = 'visible';
+
+
+
+}
+
+
+function change2(){
+var d = document.getElementById('info2');
+Plotly.purge('info2');
+d.style.visibility = "hidden";
+ 
+           // d.innerHTML = "<img src='hk.jpg' style='width:70%' align='middle'>";
+   var d1 = document.getElementById('delcon');
+   d1.style.visibility='hidden';
+   
+}
+      client.getLeafletLayer().addTo(map);   
+      function done() {
+      //  document.getElementById('info1').innerHTML="<div '><img src='plot.png'  style='width:80%;position:absolute;left:20px;top:180px;' '></div>";
+       var req = new XMLHttpRequest();
+        var result = document.getElementById('info1');
+
+        req.onreadystatechange = function()
+        {
+          if(this.status == 200) {
+ check_status=200;
+s=this.responseText.split("***");
+
+try{
+xlist = s[1].match(/\d+(?:\.\d+)?/g).map(Number);
+}catch(error){
+}
+try{
+ylist1 = s[2].match(/\d+(?:\.\d+)?/g).map(Number);
+}catch(error){
+}
+try{
+ylist2 = s[3].match(/\d+(?:\.\d+)?/g).map(Number);
+}catch(error){
+}
+//console.log(xlist);
+
+            result.innerHTML = "<div top=\'0px\' >"+'<img src="data:image/jpg;base64,' + s[0] + '"/ width=\'100%\' onclick="changeimg()"  >'+"</div>";
+ //result1.innerHTML = "<div top=\'0px\' >"+'<img src="data:image/jpg;base64,' + this.responseText + '"/ width=\'100%\'  >'+"</div>";
+            pic=s[0];
+           // console.log(x);
+          }  else if(this.status == 201) {
+           // result.innerHTML = "Processing...";
+            //console.log(this.status);
+            check_status=201;
+             result.innerHTML = "<div top=\'0px\' >"+'<img src="img/plot1.png"/ width=\'100%\' onclick="changeimg()"  >'+"</div>";
+          }else {
+            result.innerHTML = "Processing...";
+           // console.log(this.readyState)
+          }
+        }
+var value3 = document.getElementById("input3");
+  var value4 = document.getElementById("input4");
+        req.open('POST', 'http://0.0.0.0:5000/ ', true);
+        req.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        //req.setRequestHeader('Access-Control-Allow-Origin','*');
+ //req.send("source=no&sourceid=&dist=no&distid=&pic=yes"+"&dist_lat="+35.475+"&dist_lon="+-78.825+"&source_lat="+35.125+"&source_lon="+-78.875+"&from="+value3.value+"&to="+value4.value);
+        if(source_lat!=0&&source_lon!=0&&dist_lat!=0&&dist_lat!=0){
+             req.send("source=no&sourceid=&dist=no&distid=&pic=yes"+"&dist_lat="+dist_lat+"&dist_lon="+dist_lon+"&source_lat="+source_lat+"&source_lon="+source_lon+"&from="+value3.value+"&to="+value4.value);
+
+
+}
+      }
+    </script>
+   
+    </script>
+  </body>
+</html>
+
+      
+
